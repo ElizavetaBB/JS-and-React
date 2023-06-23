@@ -1,9 +1,18 @@
 "use strict";
 
-let f1 = 5;
-let f2 = 5;
+let number = 5; debugger
 
-console.log(++f1);
-console.log(--f2);
+function logNumber() {
+    let number = 4; debugger
 
-console.log(3);
+    function logNewLevel() {
+        console.log(number); debugger
+    }
+
+    logNewLevel();
+    console.log(number);
+}
+
+number = 6;
+
+logNumber(); debugger
