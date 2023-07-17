@@ -211,16 +211,38 @@ https://developer.mozilla.org/ru/docs/Web/JavaScript/Reference/Operators/Nullish
 
 https://developer.mozilla.org/ru/docs/Web/JavaScript/Reference/Operators/Optional_chaining
 
+## Живые коллекции и методы
+`document.querySelectorAll('...')` - получает коллекцию с элементами на момент открытия страницы, до ее изменения. Коллекция статична и ничего не знает о последующих элементах.
+
+`document.getElementsByClassName('...')` - такие методы уже получают динамические коллекции. Например, если где-то в коде в глобальной области дальше есть удаление элемента из верстки, то такие методы вернут обновленный набор элементов без удаленного. `Минус` методов - у листа-результата отсутствуют методы работы как с массивами (forEach, key-value и т.п.). Создать массив просто - Array.from(лист элементов).
+
+> Полезный метод matches - определяет, соответствует ли элемент указанному css-селектору. Пример: 
+```
+<div id="one">Первый подопытный</div>
+<div class="someClass" id="two">Второй подопытный</div>
+
+var coll = document.querySelectorAll("div");
+  for (var i = 0, len = coll.length; i < len; i++) {
+    if (coll[i].matches(".someClass")) {
+      alert(coll[i].id+": Я выжил!");
+    }
+```
+
+> Метод closest(css selector) - обходит элемент и его родителей, пока не найдет узел, соответствующий указанному селектору CSS.
+
 ## Тип данных Symbol
 Уникальный и неизменяемый тип данных, который может быть использован как идентификатор для свойств объектов.
 ```
 let id = Symbol();
 obj[id] = 1;
 ```
+Не итерируется в циклах. Т.е., символы можно использовать для создания скрытых/приватных свойств объекта.
+
+У объектов существует метод получения таких символьных свойств - `Object.getOwnPropertySymbols(obj)`.
 
 https://developer.mozilla.org/ru/docs/Web/JavaScript/Reference/Global_Objects/Symbol
 
-### Дескрипторы свойств
+## Дескрипторы свойств
 1. Object.getOwnPropertyDescriptor(объект, 'свойство')
 2. Object.defineProperty(объект, 'свойство', {writable: false}) - изменяет свойства для 'свойства' объекта. Здесь, например, оно становится readonly. Хорошо работает в объектах вместо указания слова `const`.
 3. Object.defineProperties(object, 'свойство': {}, 'свойство2': {}) - позволяет менять несколько свойств.
@@ -228,7 +250,45 @@ https://developer.mozilla.org/ru/docs/Web/JavaScript/Reference/Global_Objects/Sy
 Методы объектов:
 1. Object.frezze() - любые изменения над объектом запрещаются.
 2. preventExtensions() - предотвращает любое расширение объекта.
-3. Object.keys(), .values(), .entries().
+3. seal() - предотвращает удаление и добавление свойств объекта другим кодом.
+4. Object.keys(), .values(), .entries().
+
+## Итерируемые конструкции
+`for key in obj` - получает **ключи** объекта. `for key of obj` - получает сразу значения. 
+
+Объект является итерируемым, если он содержит вызываемый метод \[Symbol.iterator\], который не принимает аргументов и возвращает объект, соответствующий протоколу итератора.
+
+ES6 предоставляет встроенные итераторы для коллекций типа Array, Set и Map. Для реализации своего типа нужно реализовать протоколв итерации - в классе объекта должен быть метод `next`, возвращающий объект `{value: <следующее знач-е>, done: true, если дальше в коллекции нет элементов}`. 
+
+> Метод hasOwnProperty(prop) - возвращает логическое значение, указывающее, содержит ли объект указанное свойство.
+
+![](images/Iterator.PNG)
+
+### Map
+Создается через `new Map()`. Методы:
+1. `set(key, value)` - добавляет новое значение. Можно использовать цепочкой, т.к. метод возвращает измененную map: `map.set(key1, value1).set(key2, value2);`
+2. `get(key)` - получаем значение value
+3. `has(key)` - проверяем, есть ли объект внутри карты
+4. `delete(key)` - удаляет объект
+5. `clear()` - полностью очистить карту
+6. `size` - свойство, кол-во элементов внутри карты
+
+Карта - это массив с массивами. Отличие от объектов - ключи могут быть чем угодно (массивы, объекты и т.п.), у объектов ключи всегда являются строками.
+
+Способы переборы карты:
+1. У карт есть метод `keys()`, передающий все ключи карты.
+2. Можно получить отдельно значения через метод `values()`
+3. Метод `entries()` - возвращает массивы, в которых элементы имеют вид `['key', 'value']`. Пример: 
+> for (const [key, value] of Object.entries(obj)) console.log(`${key} ${value}`); // "a 5", "b 7", "c 9"
+4. Метод `forEach((key, value, map) => {...})`
+
+https://developer.mozilla.org/en-US/docs/Web/JavaScript/Reference/Global_Objects/Map
+
+https://learn.javascript.ru/map-set
+
+### Set
+Set - это массив, где каждое значение встречается только однажды (является уникальным). Методы:
+1. `add(value)` - возвращает в конце измененный set. 
 
 ## Время выполнения скриптов
 1. const timerId = setTimeout(handler, time) - через time миллисекунд срабатывает функция handler.
@@ -266,8 +326,10 @@ https://learn.javascript.ru/garbage-collection
 https://html-plus.in.ua/kak-izbezhat-utechek-pamyati-v-javascript/
 
 ### WeakMap и WeakSet
+В WeakMap в качестве ключей могут быть использованы только объекты. Перебор карты через итератор невозможен.
+
+WeakMaps имеют "weak" («слабые») обращения к ключам объекта, а следовательно непрепятствие сборщику мусора, когда мы больше не имеем объекта-ключа.
+https://developer.mozilla.org/ru/docs/Web/JavaScript/Reference/Global_Objects/WeakMap 
 
 ## Даты
 https://developer.mozilla.org/ru/docs/Web/JavaScript/Reference/Global_Objects/Date
-
-Обработка прошедшей даты
