@@ -162,3 +162,218 @@ function calcOrDouble(number, basis = 2) {
 calcOrDouble(3); // 6
 ```
 
+## Продвинутый JS
+### Передача объектов по сети
+Передавать объекты в чистом виде нельзя. Можно перевести их в JSON строку:
+```
+JSON.stringify(object);
+```
+
+Перевод из JSON-а в обычный объект:
+```
+JSON.parse(object)
+```
+> Таким способом можно создавать глубокие копии объектов.
+### AJAX и общение с сервером
+Способы формирования HTTP запроса:
+1. XMLHttpRequest - https://developer.mozilla.org/ru/docs/Web/API/XMLHttpRequest. Методы и свойства:
+    - request.open(method, url, async, login, pass) - url сервера, async - асинхронность. Синхронный код идет по порядку и все операции ниже ждут операции выше. Асинхронный код - никого не ждут.
+    - request.setRequestHeader('Content-type', 'application/json: charset=utf-8');
+    - request.send();
+    - status - показывает статус запроса
+    - statusText - текстовое описание статуса ответа
+    - response/responseText
+    - readyState - цифра или слова: UNSENT/OPENED/HEADERS_RECEIVED/LOADING/DONE.
+2. FetchAPI - ниже.
+
+### Отправка данных на сервер
+```
+const request = new XMLHttpRequest();
+request.open('POST', 'js/server.php');
+request.setRequestHeader('Content-type', 'application/json');
+
+const formData = new FormData(form);
+const object = {};
+
+formData.forEach((value, key) => {
+    object[key] = value;
+});
+
+request.send(JSON.stringify(object));
+```
+### Промисы (Promise)
+Используется в асинхронных операциях - другим примером являются таймауты и запросы на сервер.
+
+Promise - обещание, что после выполнения одного, будет выполнено второе, третье и т.п. цепочка.
+
+Обычно в Promise коллбэк-функции принимают в себя 2 параметра: resolve и reject:
+```
+const req = new Promise(function(resolve, reject) {
+    setTimeout(() => {
+        ....
+        resolve(product);
+        ....
+        reject(product);
+    }, 2000);
+});
+
+req.then(....) // обрабатывает resolve функцию
+   .catch(...) // обрабатывает reject
+```
+Операции `then` могут идти цепочкой в случае, если внутри возвращать новый промис:
+```
+req.then((product) => {
+    return new Promise((resolve, reject) => {
+        setTimeout(() => {
+            product.status = 'order';
+            resolve(product);
+        }, 2000);
+    });
+}).then(data => {
+        console.log(data);
+})
+```
+
+Для закрытия промис функции используется блок `finally`: 
+```
+req.then(...)
+   .then(...)
+   .catch(...)
+   .finally(() => {
+        console.log("End time");
+    })
+```
+
+Еще методы промисов:
+1. Promise.all(promises[]) - внутрь себя принимает массив с промисами. Потом их можно обработать `then()`. Позволяет убедиться, что все промисы выполнились.
+2. Promise.race(promises[]) - выполняется определенная операция из `then()`, когда один из промисов правильно отработал.
+
+### Fetch API
+https://developer.mozilla.org/ru/docs/Web/API/Fetch_API/Using_Fetch
+
+Fetch API предоставляет интерфейс JavaScript для работы с запросами и ответами HTTP. Он также предоставляет глобальный метод fetch(), который позволяет получать ресурсы по сети асинхронно.
+
+Метод `fetch()` возвращает Promise после вызова.
+```
+fetch('http://example.com/movies.json') // GET-запрос
+  .then((response) => {
+    return response.json(); // .json() тоже возвращает Promise
+  })
+  .then((data) => {
+    console.log(data);
+  });
+```
+
+Отправка запросов с другими методами - настройки передаются объектом:
+```
+fetch('https://jsonplaceholder.typicode.com/posts', {
+        method: "POST",
+        body: JSON.stringify({"name": "Alex"}),
+        headers: {
+            'Content-type': 'application/json'
+        }
+    })
+```
+
+> fetch обрабатывает ошибки протокола (404, 502 и т.п.), Promise внутри не выкинет reject, это не считается ошибкой, выполнится resolve. Reject выполнится только при сбое сети и подобном, когда что-то помешало запросу в принципе выполниться. Для обработки статусов запроса можно делать следующее:
+```
+
+```
+
+### Методы перебора массивов
+1. `filter(условие)` - возвращает новый массив, удовлетворяющий условию. 
+2. `map()` - позволяет изменить исходный массив, возвращая новый.
+```
+const answers = ['IvAn', 'AnnA', 'HellFHF'];
+const result = answers.map(ans => ans.toLowerCase());
+console.log(result); // ['ivan', 'anna', 'hellfhf']
+```
+3. `every()` - возвращает boolean значение. Если все элементы удовлетворяют условию, возвращает true. 
+4. `some(условие)`- возвращает boolean значение. Если хотя бы один элемент удовлетворяет условию, возвращает true.
+5. `reduce((result, current) => {function}, start)` - собирает массив в одну сущность и возвращает ее. `result` - собирает в себя результат и изначально равен 0, 1, пустой строке в зависимости от операции, `current` - каждый элемент приходящий от массива. `start` - необязательный параметр, result в начале примет это значение
+```
+const arr = [4, 5, 1, 3, 2, 6];
+const result = arr.reduce((sum, current) => sum + current);
+1. sum = 0, current = 4
+2. sum = 4, current = 5 ...
+```
+
+> Удобный способ преобразования объекта в массив `Object.entries(neededObj)`
+
+### NPM
+Установка json-server:
+`npm install json-server -g --save-dev`
+
+### Получение данных с сервера. Async/Await
+При выполнении промиса может случиться такое, что дальше по коду он используется в синхронном виде, что приведет к ошибке, т.к. до выполнения запроса в промисе будет null. Для избегания такой ситуации существуют `Async/Await`.
+
+`Async` ставится перед функцией, в которой есть одновременно синхронные и асинхронные действия, `await` ставится перед операцией, которую нужно дождаться:
+```
+const postData = async (url, data) => {
+        const result = await fetch(url, {
+            ...
+        });
+
+        return await result.json();
+    };
+```
+
+### Библиотеки: axios
+Ресурс для взаимодействия с сервером, в который встроено много доп возможностей, например, обработка ошибок запросов внутри.
+
+### Регулярные выражения
+Создание:
+1. `new RegExp('pattern), 'flags`
+2. `/pattern/`
+
+Методы:
+1. `string.search(pattern)` - ищет первое вхождение и отдает его индекс
+2. `match(pattern)` - отдает все совпавшие части строки
+3. `replace(pattern, newString)`
+4. `pattern.test(string)` - если совпадение с паттерном есть, выведет true.
+
+
+Различные флаги к регуляркам (`/pattern/flag`), их можно комбинировать:
+1. `i` - независимо от регистра
+2. `g` - ищет несколько вхождений
+3. `m` - поддерживает многострочный режим
+
+Шаблоны:
+1. `\d` - все цифры, `\D` - не числа
+2. `\w` - все буквы, `\W` - не буквы
+3. `\s` - пробелы, `\S` - не пробелы
+
+### Геттеры и сеттеры (свойства объектов)
+https://learn.javascript.ru/property-accessors
+
+Есть два типа свойств объекта:
+1. свойства-данные (data properties). 
+2. свойства-аксессоры (accessor properties). По своей сути это функции, которые используются для присвоения и получения значения, но во внешнем коде они выглядят как обычные свойства объекта.
+```
+let obj = {
+  get propName() {
+    // геттер, срабатывает при чтении obj.propName
+  },
+
+  set propName(value) {
+    // сеттер, срабатывает при записи obj.propName = value
+  }
+};
+```
+### Инкапсуляция
+Механизм, который объединяет данные и код, манипулирующий зтими данными, а также защищает и то, и другое от внешнего вмешательства или неправильного использования.
+
+Создать переменную, которая недоступна снаружи:
+```
+function User(name, age) {
+    let userAge = age; // 27
+}
+console.log(this.userAge) // undefined
+
+либо 
+class User {
+    constructor(age) {
+        this._age = age; // подчеркивание указывает программистам, что поле приватное
+    }
+}
+```
